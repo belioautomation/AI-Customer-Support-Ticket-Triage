@@ -1,11 +1,16 @@
 # 📩 AI Customer Support Ticket Triage — n8n Automation
 
-An AI-powered customer support automation workflow built using **n8n**, **OpenAI**, **Gmail**, **Google Sheets**, and **Telegram Bot API**.
+![n8n](https://img.shields.io/badge/n8n-Automation-orange)
+![OpenAI](https://img.shields.io/badge/AI-OpenAI-blue)
+![JavaScript](https://img.shields.io/badge/Code-JavaScript-yellow)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-This system automatically monitors incoming customer emails, filters irrelevant messages, classifies support requests using AI, assigns departments and priorities, calculates SLA response times, stores ticket records, and sends real-time notifications to support teams.
+An AI-powered customer support automation workflow built using **n8n**, **OpenAI**, **Gmail API**, **Google Sheets**, and **Telegram Bot API**.
+
+This system automatically monitors incoming customer emails, detects support-related requests, filters irrelevant messages, classifies tickets using artificial intelligence, assigns departments and priorities, calculates SLA response targets, stores ticket records, and sends real-time notifications to support teams.
 
 **Stack:**  
-n8n · OpenAI · Gmail · Google Sheets · Telegram Bot · JavaScript · Google Workspace API
+n8n · OpenAI · Gmail API · Google Sheets · Telegram Bot · JavaScript · Google Workspace API · AI Automation
 
 
 ---
@@ -15,20 +20,35 @@ n8n · OpenAI · Gmail · Google Sheets · Telegram Bot · JavaScript · Google 
 
 ## Problem
 
-Customer support teams often receive large volumes of emails containing:
+Customer support teams receive a large number of emails every day, including:
+
 
 - Technical issues
 - Account problems
+- Billing requests
 - General inquiries
 - Spam messages
 - Marketing emails
 
-Manually reviewing and categorizing every message can lead to:
+
+Manually reviewing and categorizing every message creates several challenges:
+
 
 - Slow response times
 - Incorrect ticket prioritization
-- Missed urgent issues
-- Increased workload
+- Missed urgent customer issues
+- Increased workload for support teams
+- Difficult ticket tracking
+
+
+Common support tasks affected:
+
+
+- Email classification
+- Ticket assignment
+- Priority management
+- SLA tracking
+- Customer communication
 
 
 ---
@@ -40,12 +60,15 @@ This project creates an AI-powered ticket triage system that automatically:
 
 1. Monitors incoming Gmail messages
 2. Filters irrelevant emails
-3. Uses AI to analyze customer requests
-4. Classifies tickets by department
-5. Assigns priority levels
-6. Generates SLA response times
-7. Stores ticket information
-8. Sends instant team notifications
+3. Extracts customer request information
+4. Uses OpenAI to classify support tickets
+5. Assigns departments and priority levels
+6. Generates SLA response targets
+7. Stores ticket information in Google Sheets
+8. Sends Telegram notifications to support teams
+
+
+The workflow acts as an intelligent support assistant that helps teams process customer requests faster and maintain consistent service quality.
 
 
 ---
@@ -56,26 +79,36 @@ This project creates an AI-powered ticket triage system that automatically:
 ## Email Processing
 
 ✅ Gmail inbox monitoring  
-✅ Automatic email filtering  
-✅ Support ticket detection  
+✅ Automatic email detection  
+✅ Support request identification  
 ✅ Email content extraction  
+✅ Spam and irrelevant email filtering  
 
 
-## AI Ticket Classification
+## Artificial Intelligence
 
-✅ OpenAI-powered analysis  
+✅ OpenAI-powered ticket analysis  
+✅ Customer issue classification  
 ✅ Department assignment  
 ✅ Priority prediction  
-✅ Ticket summarization  
-✅ SLA recommendation generation  
+✅ AI-generated summaries  
+✅ SLA response recommendation  
 
 
-## Automation
+## Ticket Management
 
-✅ n8n workflow automation  
+✅ Automated ticket creation  
 ✅ Google Sheets ticket database  
-✅ Telegram notifications  
-✅ Automated support pipeline  
+✅ Structured ticket records  
+✅ Status tracking  
+✅ Support workflow automation  
+
+
+## Notifications
+
+✅ Telegram support alerts  
+✅ High-priority ticket notifications  
+✅ Real-time team updates  
 
 
 ---
@@ -92,23 +125,26 @@ A["📩 Customer Email"]
 --> B["📧 Gmail Trigger"]
 
 
-B --> C{"🚫 Filter Email"}
+B --> C{"🚫 Email Filter"}
 
 
-C -->|Spam / Newsletter| D["Ignore"]
+C -->|Spam / Newsletter| D["❌ Ignore Email"]
+
 
 C -->|Support Request| E["🤖 OpenAI Analysis"]
 
 
-E --> F["📝 Parse JSON Output"]
+E --> F["📝 JavaScript JSON Parser"]
 
 
 F --> G["🏷️ Assign Department"]
 
-G --> H["⚡ Set Priority + SLA"]
+
+G --> H["⚡ Priority + SLA Generator"]
 
 
-H --> I["📊 Google Sheets"]
+H --> I["📊 Google Sheets Ticket Database"]
+
 
 I --> J["📱 Telegram Notification"]
 
@@ -118,31 +154,50 @@ I --> J["📱 Telegram Notification"]
 
 # 🏗️ Workflow Implementation
 
-# Workflow 1: AI Support Ticket Processing
+# Workflow 1: AI Support Ticket Processing Pipeline
 
 ## Node 1 — Gmail Trigger
 
 ### Purpose
 
-Monitor incoming customer support emails.
-
-Captured Information:
-
-| Field   | Description      |
-| ------- | ---------------- |
-| Sender  | Customer email   |
-| Subject | Email title      |
-| Body    | Customer message |
-| Labels  | Gmail metadata   |
+Monitor incoming customer emails and start the support workflow automatically.
 
 Configuration:
 
-```
+```text
 Trigger:
+
 Gmail Trigger
 
+
 Event:
+
 New Email Received
+```
+
+Captured Information:
+
+| Field     | Description            |
+| --------- | ---------------------- |
+| Sender    | Customer email address |
+| Subject   | Email title            |
+| Body      | Customer message       |
+| Labels    | Gmail metadata         |
+| Timestamp | Email received time    |
+
+Example:
+
+```json
+{
+"sender":
+"customer@email.com",
+
+"subject":
+"Unable to login",
+
+"message":
+"I cannot access my account."
+}
 ```
 
 ---
@@ -151,28 +206,29 @@ New Email Received
 
 ### Purpose
 
-Remove irrelevant messages before AI processing.
+Identify whether an email is a valid customer support request.
 
-Filtered Examples:
+Filtered Messages:
 
-* LinkedIn notifications
 * Newsletters
-* Promotional emails
-* Automated messages
+* Marketing emails
+* Automated notifications
+* Promotional messages
 
 Logic:
 
-```
-Support Email
-      |
-      ↓
-Continue Workflow
+```text
+Incoming Email
 
+        ↓
 
-Non-support Email
-      |
-      ↓
-Ignore
+Support Request?
+
+        ↓
+
+YES → Continue Processing
+
+NO → Ignore Email
 ```
 
 ---
@@ -181,7 +237,7 @@ Ignore
 
 ### Purpose
 
-Analyze customer messages and classify support requests.
+Analyze customer messages and generate structured support ticket information.
 
 AI Evaluation Criteria:
 
@@ -190,8 +246,9 @@ AI Evaluation Criteria:
 * Priority
 * Urgency
 * Required response time
+* Customer impact
 
-Example AI Output:
+Example AI Response:
 
 ```json
 {
@@ -202,42 +259,56 @@ Example AI Output:
 "High",
 
 "summary":
-"User cannot log in to account.",
+"Customer cannot login to account.",
 
 "sla":
 "Respond within 1 hour"
 }
 ```
 
+AI Output:
+
+| Field      | Description                |
+| ---------- | -------------------------- |
+| Department | Assigned support team      |
+| Priority   | Ticket urgency             |
+| Summary    | AI-generated issue summary |
+| SLA        | Response target            |
+
 ---
 
-# Node 4 — Code Node
+# Node 4 — Code Node (JSON Parser)
 
 ### Purpose
 
-Convert AI-generated JSON output into structured n8n data.
+Convert AI-generated output into structured n8n workflow data.
 
 Processing:
 
-```
+```text
 OpenAI Response
 
         ↓
 
-JSON Parser
+JavaScript JSON Parsing
 
         ↓
 
-Workflow Data
+Structured Ticket Data
 ```
 
-Output:
+Example Output:
 
 ```json
 {
-"department":"Technical Support",
-"priority":"High",
-"summary":"Login problem"
+"department":
+"Technical Support",
+
+"priority":
+"High",
+
+"summary":
+"Login problem"
 }
 ```
 
@@ -247,49 +318,52 @@ Output:
 
 ### Purpose
 
-Determine whether the email should become a support ticket.
+Confirm whether the message should become an official support ticket.
 
-## TRUE
+## TRUE Branch
 
 Continue processing:
 
-* Assign SLA
-* Save ticket
+* Generate ticket metadata
+* Store ticket record
 * Notify support team
 
-## FALSE
+## FALSE Branch
 
 Ignore message.
 
 ---
 
-# Node 6 — Set Node
+# Node 6 — Set Node (Ticket Metadata)
 
 ### Purpose
 
-Generate ticket metadata.
+Generate additional ticket information.
 
 Generated Fields:
 
-| Field        | Description       |
-| ------------ | ----------------- |
-| Priority     | Ticket urgency    |
-| SLA          | Response deadline |
-| Status       | Ticket state      |
-| Created Date | Timestamp         |
+| Field        | Description          |
+| ------------ | -------------------- |
+| Priority     | Ticket urgency       |
+| SLA          | Response deadline    |
+| Status       | Current ticket state |
+| Created Date | Ticket timestamp     |
 
 Example:
 
-```
+```text
 Priority:
+
 High
 
 
 SLA:
+
 1 Hour
 
 
 Status:
+
 Open
 ```
 
@@ -299,7 +373,7 @@ Open
 
 ### Purpose
 
-Store support tickets for tracking.
+Store customer support tickets for tracking and management.
 
 Database Structure:
 
@@ -310,9 +384,16 @@ Database Structure:
 | Subject    | Ticket title         |
 | Department | Assigned team        |
 | Priority   | Urgency level        |
-| Summary    | AI summary           |
+| Summary    | AI issue summary     |
 | SLA        | Response target      |
-| Status     | Ticket status        |
+| Status     | Ticket state         |
+
+Example:
+
+| Customer                                        | Department        | Priority | SLA      | Status |
+| ----------------------------------------------- | ----------------- | -------- | -------- | ------ |
+| [customer@email.com](mailto:customer@email.com) | Technical Support | High     | 1 Hour   | Open   |
+| [client@email.com](mailto:client@email.com)     | Billing           | Medium   | 24 Hours | Open   |
 
 ---
 
@@ -320,52 +401,67 @@ Database Structure:
 
 ### Purpose
 
-Notify support teams instantly.
+Send instant alerts to support teams when new tickets are created.
 
 Example:
 
-```
+```text
 🚨 New Support Ticket
 
 
-Department:
+🏷️ Department:
+
 Technical Support
 
 
-Priority:
+⚡ Priority:
+
 High
 
 
-Summary:
-User cannot log in to account.
+📝 Summary:
+
+Customer cannot login to account.
 
 
-SLA:
+⏱️ SLA:
+
 Respond within 1 hour
+
+
+📌 Status:
+
+Open
 ```
 
 ---
 
-# 📊 Ticket Management Sheet
+# 📊 Ticket Management Database
 
-Example:
+Google Sheets stores:
 
-| Customer                                    | Department        | Priority | SLA      | Status |
-| ------------------------------------------- | ----------------- | -------- | -------- | ------ |
-| [user@email.com](mailto:user@email.com)     | Technical Support | High     | 1 Hour   | Open   |
-| [client@email.com](mailto:client@email.com) | Billing           | Medium   | 24 Hours | Open   |
+| Field          | Description         |
+| -------------- | ------------------- |
+| Ticket Date    | Creation timestamp  |
+| Customer Email | User contact        |
+| Issue Category | Support type        |
+| Department     | Assigned team       |
+| Priority       | Urgency level       |
+| SLA            | Response deadline   |
+| Status         | Ticket progress     |
+| Summary        | AI-generated report |
 
 ---
 
 # 🔐 Credentials Required
 
-| Service       | Purpose            |
-| ------------- | ------------------ |
-| Gmail OAuth2  | Email monitoring   |
-| OpenAI API    | AI classification  |
-| Google OAuth2 | Sheets storage     |
-| Telegram API  | Notifications      |
-| n8n Instance  | Workflow execution |
+| Service          | Purpose                  |
+| ---------------- | ------------------------ |
+| Gmail OAuth2     | Email monitoring         |
+| OpenAI API       | AI ticket classification |
+| Google OAuth2    | Google Sheets storage    |
+| Telegram Bot API | Team notifications       |
+| n8n Instance     | Workflow execution       |
 
 ---
 
@@ -373,25 +469,27 @@ Example:
 
 ## 1. Configure Gmail
 
-Connect Gmail OAuth credentials in n8n.
+Connect Gmail OAuth credentials inside n8n.
 
 Required permission:
 
-```
+```text
 Read Emails
 ```
 
+Test incoming email detection.
+
 ---
 
-## 2. Setup OpenAI
+## 2. Configure OpenAI
 
 Add OpenAI API credentials:
 
-```
+```text
 OPENAI_API_KEY
 ```
 
-Test AI response generation.
+Test ticket classification response.
 
 ---
 
@@ -399,33 +497,40 @@ Test AI response generation.
 
 Create spreadsheet:
 
-```
+```text
 Customer Support Tickets
 ```
 
-Add columns:
+Required columns:
 
-```
+```text
 Date
+
 Sender
+
 Subject
+
 Department
+
 Priority
+
 Summary
+
 SLA
+
 Status
 ```
 
 ---
 
-## 4. Setup Telegram Bot
+## 4. Configure Telegram Bot
 
 Steps:
 
 1. Open Telegram
 2. Create bot using BotFather
-3. Copy API token
-4. Add credentials in n8n
+3. Copy bot token
+4. Add Telegram credentials in n8n
 5. Configure notification channel
 
 ---
@@ -434,7 +539,7 @@ Steps:
 
 Import:
 
-```
+```text
 workflow.json
 ```
 
@@ -451,20 +556,20 @@ Activate workflow.
 
 # 🧪 Testing Checklist
 
-| Test Case             | Expected Result          |
-| --------------------- | ------------------------ |
-| Receive support email | Workflow triggers        |
-| Receive newsletter    | Email ignored            |
-| AI analyzes ticket    | Classification generated |
-| High priority ticket  | Telegram alert sent      |
-| Google Sheets updated | Ticket stored            |
-| SLA generated         | Response target created  |
+| Test Case              | Expected Result         |
+| ---------------------- | ----------------------- |
+| Receive support email  | Workflow starts         |
+| Receive newsletter     | Email filtered          |
+| OpenAI analyzes ticket | Classification created  |
+| High priority ticket   | Telegram alert sent     |
+| Google Sheets updated  | Ticket stored           |
+| SLA generated          | Response target created |
 
 ---
 
 # 📁 Repository Structure
 
-```
+```text
 AI-Customer-Support-Ticket-Triage/
 
 │
@@ -472,16 +577,21 @@ AI-Customer-Support-Ticket-Triage/
 │
 ├── workflow.json
 │
-└── screenshots/
+├── screenshots/
+│   │
+│   ├── workflow.png
+│   ├── gmail-trigger.png
+│   ├── email-filter.png
+│   ├── openai-output.png
+│   ├── code-node-output.png
+│   ├── if-node.png
+│   ├── google-sheets-result.png
+│   ├── telegram-notification.png
+│   └── execution-result.png
+│
+└── assets/
     │
-    ├── workflow.png
-    ├── gmail-trigger.png
-    ├── openai-output.png
-    ├── code-node.png
-    ├── if-node.png
-    ├── google-sheets-result.png
-    ├── telegram-notification.png
-    └── execution-result.png
+    └── sample-ticket.json
 ```
 
 ---
@@ -491,28 +601,29 @@ AI-Customer-Support-Ticket-Triage/
 Recommended screenshots:
 
 * Complete n8n workflow
-* Gmail Trigger
+* Gmail Trigger configuration
 * Email filtering logic
 * OpenAI classification output
-* JSON parsing
-* IF node routing
-* Google Sheets ticket log
+* JSON parser result
+* Ticket routing logic
+* Google Sheets ticket database
 * Telegram notification
-* Workflow execution
+* Workflow execution result
 
 ---
 
 # 🚀 Future Improvements
 
-| Feature                | Implementation                |
-| ---------------------- | ----------------------------- |
-| Auto Email Reply       | Generate AI responses         |
-| Ticket ID System       | Unique ticket tracking        |
-| Sentiment Analysis     | Detect customer emotions      |
-| CRM Integration        | Salesforce/Zendesk connection |
-| Support Dashboard      | Analytics dashboard           |
-| Knowledge Base AI      | Automated troubleshooting     |
-| Multi-language Support | Global customer support       |
+| Feature                   | Implementation                 |
+| ------------------------- | ------------------------------ |
+| Auto Email Reply          | Generate AI customer responses |
+| Ticket ID System          | Unique ticket tracking         |
+| Sentiment Analysis        | Detect customer emotions       |
+| CRM Integration           | Salesforce/Zendesk connection  |
+| Support Dashboard         | Analytics dashboard            |
+| Knowledge Base AI         | Automated troubleshooting      |
+| Multi-language Support    | Global customer service        |
+| Voice Support Integration | AI call transcription          |
 
 ---
 
@@ -521,26 +632,35 @@ Recommended screenshots:
 ## Automation
 
 * n8n Workflow Automation
-* Event-driven systems
+* Event-driven workflows
 * Business process automation
+* Customer support automation
 
 ## Artificial Intelligence
 
 * OpenAI API Integration
 * Prompt Engineering
-* AI Classification
+* AI classification systems
+* Structured AI outputs
 
 ## Programming
 
 * JavaScript
-* JSON Processing
-* Data Transformation
+* JSON processing
+* Data transformation
+* Workflow logic
 
 ## APIs
 
 * Gmail API
 * Google Sheets API
 * Telegram Bot API
+
+## Business Automation
+
+* Ticket management systems
+* SLA-based routing
+* AI-assisted customer support
 
 ---
 
@@ -549,10 +669,10 @@ Recommended screenshots:
 This project demonstrates:
 
 * Building AI-powered customer support systems
-* Automating email classification
-* Integrating LLMs into workflows
-* Creating SLA-based routing systems
-* Designing scalable business automation
+* Automating email classification workflows
+* Integrating LLMs into business processes
+* Creating SLA-based ticket routing
+* Designing scalable n8n automation solutions
 
 ---
 
@@ -577,7 +697,7 @@ GitHub:
 
 [https://github.com/belioautomation](https://github.com/belioautomation)
 
-This project is part of my **30-Day n8n Automation Portfolio**, showcasing AI-powered workflow automation using n8n, OpenAI, APIs, and real-world business automation.
+This project is part of my **30-Day n8n Automation Portfolio**, showcasing AI-powered workflow automation using **n8n, OpenAI, APIs, JavaScript, and real-world business automation systems**.
 
 ---
 
@@ -586,6 +706,4 @@ This project is part of my **30-Day n8n Automation Portfolio**, showcasing AI-po
 MIT License
 
 ```
-
-This README is now consistent with your previous automation projects and presents the workflow more like a **real AI automation engineer portfolio project** rather than only a workflow description.
 ```
