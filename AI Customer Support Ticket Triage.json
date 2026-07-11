@@ -1,0 +1,468 @@
+{
+  "name": "AI Customer Support Ticket Triage",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -112,
+        -192
+      ],
+      "id": "97089fe0-0964-49d8-85fe-4c85cc54bf87",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wb5GiI90GiuPTeR2",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Analyze this customer email and classify it.\n\nSender:\n{{ $json.From }}\n\nSubject:\n{{ $json.Subject }}\n\nEmail Content:\n{{ $json.snippet }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a support ticket classifier.  Analyze the email below.  If this is NOT a customer support request (newsletter, LinkedIn notification, marketing email, social media update, job alert, promotional content, automated notification), return:  {   \"department\":\"Ignore\",   \"priority\":\"Low\",   \"summary\":\"Non-support email\" }  Otherwise classify:  Departments: - Technical Support - Billing - Sales - General Inquiry  Priorities: - High - Medium - Low  Email:  From: {{ $json.From }}  Subject: {{ $json.Subject }}  Content: {{ $json.snippet }}  Return JSON only."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        224,
+        -144
+      ],
+      "id": "a4acb535-1891-405f-9e61-0ec2ffff7128",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResponse = $json.text;\n\n// Remove markdown code blocks\nconst cleanJson = aiResponse\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nconst result = JSON.parse(cleanJson);\n\nreturn [{\n  json: {\n    department: result.department,\n    priority: result.priority,\n    summary: result.summary\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        0
+      ],
+      "id": "5a3343e0-586f-4487-b959-320ca6ab87e8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        256,
+        128
+      ],
+      "id": "cca1e3cd-344c-4a62-8d89-79a4f2d48578",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "p6aCPHm0mKzknowX",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "baccf94c-2911-4370-afa8-c45aa78c6daf",
+              "leftValue": "={{ $json.department }}",
+              "rightValue": "Ignore",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        736,
+        -128
+      ],
+      "id": "0ebb5030-260e-4db5-bd0d-21c3ddfb57ae",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8270cbc0-dc8a-468a-9d8e-5eb6d2540eb3",
+              "name": "department",
+              "value": "={{ $json.department }}",
+              "type": "string"
+            },
+            {
+              "id": "36b1e6a4-a5d2-483d-8ebc-f319d198e041",
+              "name": "priority",
+              "value": "={{ $json.priority }}",
+              "type": "string"
+            },
+            {
+              "id": "38771d3e-cee5-4415-b809-71efa6bf8487",
+              "name": "summary",
+              "value": "={{ $json.summary }}",
+              "type": "string"
+            },
+            {
+              "id": "c32f9de6-229d-41ad-bf42-13eac8c184b0",
+              "name": "status ",
+              "value": "Open",
+              "type": "string"
+            },
+            {
+              "id": "35bec96b-01cc-4ae1-a488-9030af1f5cda",
+              "name": "sla",
+              "value": "={{  $json.priority === \"High\" ? \"Respond within 1 hour\" : $json.priority === \"Medium\" ? \"Respond within 4 hours\" : \"Respond within 24 hours\" }}",
+              "type": "string"
+            },
+            {
+              "id": "cf58f174-07a7-423d-a621-212f40cdabf9",
+              "name": "createdDate",
+              "value": "={{ now }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        976,
+        -256
+      ],
+      "id": "2ca453c7-7269-4a07-b9ed-d4db2763aa62",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1DVZidPZNHa5d9wJyxx7IPchIz_Q5H5uuDnywUUvnRD0",
+          "mode": "list",
+          "cachedResultName": "Ticket Tracking Spreadsheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DVZidPZNHa5d9wJyxx7IPchIz_Q5H5uuDnywUUvnRD0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1DVZidPZNHa5d9wJyxx7IPchIz_Q5H5uuDnywUUvnRD0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $json.createdDate }}",
+            "Sender": "={{ $('Gmail Trigger').item.json.From }}",
+            "Subject": "={{ $('Gmail Trigger').item.json.Subject }}",
+            "Department": "={{ $json.department }}",
+            "Priority": "={{ $json.priority }}",
+            "Summary": "={{ $json.summary }}",
+            "SLA": "={{ $json.sla }}",
+            "Status": "={{ $json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sender",
+              "displayName": "Sender",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Department",
+              "displayName": "Department",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "SLA",
+              "displayName": "SLA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1200,
+        -256
+      ],
+      "id": "24006b5b-2ec6-44a6-8d7c-c4365730f7ab",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "qtNupNmEU4VCVfOQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "5518864435",
+        "text": "=🚨 New Support Ticket  \nFrom: {{ $('Gmail Trigger').item.json.From }}  \nSubject: {{ $('Gmail Trigger').item.json.Subject }}  \nDepartment: {{ $json.department }}  \nPriority: {{ $json.priority }}  \nSummary: {{ $json.summary }}  \nSLA: {{ $json.sla }}  \nStatus: {{ $json.status }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1408,
+        -256
+      ],
+      "id": "9c0be9bf-5d98-4d2d-bbdf-2b56e2cc196b",
+      "name": "Send a text message",
+      "webhookId": "ac0940bc-bcea-46cf-8b36-af37e30200d0",
+      "credentials": {
+        "telegramApi": {
+          "id": "RcgSqgXd1951dYI8",
+          "name": "AI Customer Support Ticket Triage"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8572b1f8-dbd3-4c46-b0a2-4635aaae84b9",
+              "leftValue": "={{ $json.From }}",
+              "rightValue": "linkedin.com",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            },
+            {
+              "id": "0939517b-d334-452b-bd1c-ebce8413f344",
+              "leftValue": "={{ $json.Subject }}",
+              "rightValue": "linkedin.com",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        48,
+        16
+      ],
+      "id": "548d60df-5f1d-4739-80b7-fb4bf5e10265",
+      "name": "If1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8cf0ed72-2aac-4476-9608-46c9e42f9e7c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8109642ab6846a9cf1618de304921f5663481ec8cdaee6a52dd360d6de75a743"
+  },
+  "id": "LyCA213jveC6dOSQ",
+  "tags": []
+}
