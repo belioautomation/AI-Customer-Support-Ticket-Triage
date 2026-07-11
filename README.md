@@ -1,309 +1,265 @@
----
+# 📩 AI Customer Support Ticket Triage using n8n
 
-# 📩 AI Customer Support Ticket Triage (n8n Automation)
+An AI-powered customer support automation workflow built with **n8n**, **OpenAI**, **Gmail**, **Google Sheets**, and **Telegram**. This project automatically monitors incoming support emails, filters irrelevant messages, classifies customer requests using AI, assigns departments and priorities, logs tickets into Google Sheets, and sends real-time notifications through Telegram.
 
-An intelligent automation system built using **n8n + OpenAI + Gmail + Google Sheets + Telegram** that automatically detects, classifies, and routes customer support emails.
-
----
-
-## 🚀 Overview
-
-This workflow automatically:
-
-* Monitors incoming Gmail messages
-* Filters out non-support emails (LinkedIn, newsletters, etc.)
-* Uses AI (OpenAI) to classify support tickets
-* Assigns department + priority + summary
-* Generates SLA response time
-* Stores tickets in Google Sheets
-* Sends real-time alerts via Telegram
+Developed as part of my **30-Day n8n Automation Portfolio**, this workflow demonstrates how AI can automate customer support ticket triage and improve response efficiency.
 
 ---
 
-## ⚙️ Workflow Architecture
+# 📌 Features
 
-```text
-Gmail Trigger
-      ↓
-IF (Not LinkedIn / Not Spam)
-      ↓
-OpenAI (Ticket Classification)
-      ↓
-Classify Ticket (Parse JSON)
-      ↓
-IF (department != Ignore)
-      ↓
-Set Priority + SLA
-      ↓
-Google Sheets (Log Ticket)
-      ↓
-Telegram Alert (Notify Team)
-```
+* 📩 Monitors incoming Gmail messages
+* 🚫 Automatically filters newsletters, LinkedIn, and promotional emails
+* 🤖 Uses OpenAI to classify customer support tickets
+* 🏷️ Assigns departments and ticket priorities
+* ⏱️ Generates SLA response times
+* 📊 Logs support tickets to Google Sheets
+* 📲 Sends real-time Telegram notifications
+* ⚡ Fully automated customer support workflow
 
 ---
 
-## 🧠 Features
+# 🛠 Technologies Used
 
-* 🤖 AI-powered email classification (OpenAI)
-* 📊 Automated ticket logging (Google Sheets)
-* ⏱️ SLA-based priority system
-* 🚫 Smart filtering (LinkedIn, newsletters, promotions)
-* 📢 Real-time alerts via Telegram
-* 🔁 Fully automated workflow (no manual handling)
-
----
-
-## 📦 Tech Stack
-
-* [n8n](https://n8n.io/)
-* Gmail API
-* OpenAI API (GPT-4 / GPT-4o-mini)
+* n8n
+* Gmail Trigger
+* IF Node
+* OpenAI
+* Code Node (JavaScript)
+* Set Node
 * Google Sheets API
 * Telegram Bot API
 
 ---
 
-## 🧩 Workflow Nodes
+# 📂 Workflow
 
-### 1. Gmail Trigger
+```text
+Gmail Trigger
+      │
+      ▼
+IF (Filter Emails)
+      │
+      ▼
+OpenAI (Ticket Classification)
+      │
+      ▼
+Code Node (Parse JSON)
+      │
+      ▼
+IF (Ignore Filter)
+      │
+      ▼
+Set Priority + SLA
+      │
+      ▼
+Google Sheets
+      │
+      ▼
+Telegram
+```
 
-Listens for new incoming emails in the inbox.
+---
 
-**Key fields used:**
+# ⚙ Workflow Explanation
 
-* From
+## 1. Gmail Trigger
+
+Monitors incoming Gmail messages.
+
+**Captured Information**
+
+* Sender
 * Subject
-* Snippet
+* Email Body
 * Labels
 
 ---
 
-### 2. IF Node (Filter Emails)
+## 2. IF Node (Filter Emails)
 
-Filters out non-support emails.
+Filters out non-support emails before AI processing.
 
-### Condition:
+Examples:
 
-```javascript
-{{ $json.From }}
-```
-
-**Rule:**
-
-* Does NOT contain `linkedin.com`
+* LinkedIn notifications
+* Newsletters
+* Promotional emails
 
 ---
 
-### 3. OpenAI Node (Classifier)
+## 3. OpenAI
 
-Sends email content to AI for classification.
+Analyzes incoming emails and classifies support tickets.
 
-### Prompt:
-
-```text
-Analyze this email and classify it.
-
-Return JSON only:
-{
-  "department": "",
-  "priority": "",
-  "summary": ""
-}
-```
-
----
-
-### 4. Classify Ticket (Code Node)
-
-Parses OpenAI response into structured data.
-
-````javascript
-const aiResponse = $json.text;
-
-const clean = aiResponse
-  .replace(/```json/g, '')
-  .replace(/```/g, '')
-  .trim();
-
-const result = JSON.parse(clean);
-
-return [{
-  json: result
-}];
-````
-
----
-
-### 5. IF Node (Ignore Filter)
-
-Stops non-support emails.
-
-**Condition:**
-
-```javascript
-{{ $json.department !== "Ignore" }}
-```
-
----
-
-### 6. Set Priority Node
-
-Assigns SLA and ticket status.
-
-```javascript
-SLA:
-{{ 
-$json.priority === "High"
-? "Respond within 1 hour"
-: $json.priority === "Medium"
-? "Respond within 4 hours"
-: "Respond within 24 hours"
-}}
-
-Status: Open
-CreatedDate: {{$now}}
-```
-
----
-
-### 7. Google Sheets Node
-
-Stores ticket data.
-
-| Column     | Value                                        |
-| ---------- | -------------------------------------------- |
-| Date       | `{{ $json.createdDate }}`                    |
-| Sender     | `{{ $('Gmail Trigger').item.json.From }}`    |
-| Subject    | `{{ $('Gmail Trigger').item.json.Subject }}` |
-| Department | `{{ $json.department }}`                     |
-| Priority   | `{{ $json.priority }}`                       |
-| Summary    | `{{ $json.summary }}`                        |
-| SLA        | `{{ $json.sla }}`                            |
-| Status     | `{{ $json.status }}`                         |
-
----
-
-### 8. Telegram Node
-
-Sends real-time alerts.
-
-```text
-🚨 New Support Ticket
-
-From: {{ $('Gmail Trigger').item.json.From }}
-Subject: {{ $('Gmail Trigger').item.json.Subject }}
-
-Department: {{ $json.department }}
-Priority: {{ $json.priority }}
-
-Summary: {{ $json.summary }}
-SLA: {{ $json.sla }}
-```
-
----
-
-## 🔀 Branch Logic
-
-### TRUE Branch
-
-✔ Real support tickets
-✔ Sent to OpenAI and processed
-
-### FALSE Branch
-
-❌ LinkedIn emails
-❌ Newsletters
-❌ Promotions
-→ Ignored or optionally logged
-
----
-
-## 🛠️ Setup Instructions
-
-### 1. Clone / Import Workflow
-
-Import your n8n workflow JSON file.
-
----
-
-### 2. Setup Credentials
-
-* Gmail OAuth
-* OpenAI API Key
-* Google Sheets API
-* Telegram Bot Token
-
----
-
-### 3. Configure Google Sheet
-
-Create columns:
-
-```text
-Date
-Sender
-Subject
-Department
-Priority
-Summary
-SLA
-Status
-```
-
----
-
-### 4. Run Workflow
-
-Activate workflow in n8n.
-
----
-
-## 📊 Example Output
-
-### Input Email:
-
-```
-Subject: Cannot login to account
-Body: I am unable to access my account since yesterday.
-```
-
-### AI Output:
+### AI Output
 
 ```json
 {
   "department": "Technical Support",
   "priority": "High",
-  "summary": "User cannot login"
+  "summary": "User cannot log in to account."
 }
 ```
 
-### Google Sheet Entry:
+---
 
-```
-High | Technical Support | User cannot login | SLA: 1 hour
-```
+## 4. Code Node
 
-### Telegram Alert:
+Parses the structured JSON response generated by OpenAI into data that n8n can process.
 
-```
-🚨 New Support Ticket - High Priority
+---
+
+## 5. IF Node
+
+Checks whether the email should continue through the workflow.
+
+**If True**
+
+* Continue processing
+* Assign SLA
+* Store ticket
+* Send Telegram notification
+
+**If False**
+
+* Ignore the email
+
+---
+
+## 6. Set Node
+
+Assigns ticket information.
+
+Generated Fields:
+
+* Priority
+* SLA
+* Status
+* Created Date
+
+---
+
+## 7. Google Sheets
+
+Stores all customer support tickets.
+
+### Logged Information
+
+| Date | Sender | Subject | Department | Priority | Summary | SLA | Status |
+| ---- | ------ | ------- | ---------- | -------- | ------- | --- | ------ |
+
+---
+
+## 8. Telegram
+
+Sends instant notifications for newly created support tickets.
+
+Example:
+
+```text
+🚨 New Support Ticket
+
+Department: Technical Support
+Priority: High
+
+Summary:
+User cannot log in to account.
+
+SLA:
+Respond within 1 hour
 ```
 
 ---
 
-## 🎯 Future Improvements
+# 📁 Repository Structure
 
-* Auto-reply email system
-* Ticket ID generator
+```text
+AI-Customer-Support-Ticket-Triage/
+│
+├── README.md
+├── workflow.json
+│
+└── screenshots/
+    ├── workflow.png
+    ├── gmail-trigger.png
+    ├── openai-output.png
+    ├── code-node.png
+    ├── if-node.png
+    ├── google-sheets.png
+    ├── telegram-notification.png
+    └── workflow-execution.png
+```
+
+---
+
+# 📷 Screenshots
+
+Include the following screenshots:
+
+* Complete Workflow
+* Gmail Trigger
+* OpenAI Output
+* Code Node
+* IF Node
+* Google Sheets Results
+* Telegram Notification
+* Workflow Execution
+
+---
+
+# 🎯 Learning Objectives
+
+This project demonstrates:
+
+* Gmail Automation
+* AI Email Classification
+* Prompt Engineering
+* JSON Parsing
+* Conditional Workflow Logic
+* Google Sheets Automation
+* Telegram Automation
+* SLA-Based Ticket Routing
+* AI-Powered Customer Support
+
+---
+
+# 🚀 Possible Improvements
+
+* Automatic email replies
+* Ticket ID generation
 * Slack integration
-* AI sentiment detection
-* Dashboard UI (React / Next.js)
+* AI sentiment analysis
+* Customer support dashboard
 * Multi-language support
+* CRM integration
+* Knowledge base integration
 
 ---
 
-## 🧑‍💻 Author
+# 📄 License
 
-Built with ❤️ using n8n + OpenAI automation.
+This project is licensed under the **MIT License**.
 
 ---
+
+# 🙌 Acknowledgements
+
+* n8n
+* OpenAI
+* Gmail API
+* Google Sheets API
+* Telegram Bot API
+
+---
+
+# 👨‍💻 Author
+
+**Belio C. Sinangote**
+
+BS Information Technology Student
+Cebu Technological University (CTU)
+
+GitHub: https://github.com/belioautomation
+
+This project is part of my **30-Day n8n Automation Portfolio**, showcasing practical AI-powered workflow automation using n8n and OpenAI.
